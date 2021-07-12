@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsFormsApp1", "GenshinLyrePlayer.csproj", "{E6F0A71A-2019-4760-B4E5-540A8D5B9140}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenshinLyrePlayer", "GenshinLyrePlayer.csproj", "{E6F0A71A-2019-4760-B4E5-540A8D5B9140}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

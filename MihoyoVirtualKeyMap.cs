@@ -4,7 +4,7 @@ using WindowsInput.Native;
 
 namespace GenshinLyrePlayer
 {
-    public class MihoyoMapOther
+    public static class MihoyoVirtualKeyMap
     {
         public static VirtualKeyCode GetKeyForNote(string note)
         {

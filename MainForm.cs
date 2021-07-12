@@ -1,13 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using System.IO;
 using System.Windows.Forms;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Devices;
@@ -17,43 +12,37 @@ using WindowsInput.Native;
 
 namespace GenshinLyrePlayer
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
         private string _lastMidiFile = "";
-        private Keyboard _keyboard = new Keyboard();
-        private GlobalKeyboardHook _hook;
 
-        private List<TimedKeyEvent> _events = new List<TimedKeyEvent>();
+        private bool _isPlaying;
 
-        private MidiFile _file;
-        private Playback _playback;
-        private bool _isPlaying = false;
-        private InputSimulator _input;
+        private readonly InputSimulator _input;
+        private readonly BackgroundWorker _worker;
 
-        private BackgroundWorker _worker;
-
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
 
             _input = new InputSimulator();
-
-            _hook = new GlobalKeyboardHook();
             
-            _hook.HookedKeys.Add(Keys.NumPad5);
-            _hook.HookedKeys.Add(Keys.NumPad6);
+            var hook = new GlobalKeyboardHook();
 
-            _hook.KeyDown += (sender, args) =>
+            hook.HookedKeys.Add(Keys.NumPad5);
+            hook.HookedKeys.Add(Keys.NumPad6);
+
+            hook.KeyDown += (sender, args) =>
             {
-                if (args.KeyCode == Keys.NumPad5)
+                switch (args.KeyCode)
                 {
-                    _worker.RunWorkerAsync();
+                    case Keys.NumPad5:
+                        _worker.RunWorkerAsync();
+                        break;
+                    case Keys.NumPad6:
+                        _worker.CancelAsync();
+                        break;
                 }
-                if (args.KeyCode == Keys.NumPad6)
-                {
-                    _worker.CancelAsync();
-                }
-                
             };
             
             _worker = new BackgroundWorker()
@@ -61,15 +50,90 @@ namespace GenshinLyrePlayer
                 WorkerSupportsCancellation = true
             };
             
-            _worker.DoWork += PlayMidiFileInThread;
+            _worker.DoWork += (sender, args) =>
+            {
+                Play();
+            };
+
+            uiHeader.BackColor = Color.FromArgb(100, Color.Black);
+            uiFooter.BackColor = Color.FromArgb(150, Color.Black);
         }
 
-        private void PlayMidiFileInThread(object sender, DoWorkEventArgs e)
+        #region Moving window without header
+
+        public const int WM_NCLBUTTONDOWN = 0xA1;
+        public const int HT_CAPTION = 0x2;
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern bool ReleaseCapture();
+
+        private void Helper_MouseDown(object sender, MouseEventArgs e)
         {
-            Play();
+            if (e.Button == MouseButtons.Left)
+            {
+                ReleaseCapture();
+                SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+            }
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        #endregion
+
+        private void PlayNotesAsKeys(IEnumerable<Note> notes)
+        {
+            var keys = new List<VirtualKeyCode>();
+            foreach (var note in notes)
+            {
+                var key = MihoyoVirtualKeyMap.GetKeyForNote(note.ToString());
+                if (key != VirtualKeyCode.ESCAPE)
+                {
+                    keys.Add(key);
+                }
+            }
+
+            if (keys.Count > 0) _input.Keyboard.KeyPress(keys.ToArray());
+        }
+
+        private void Play()
+        {
+            if (string.IsNullOrEmpty(_lastMidiFile))
+            {
+                SetStatus("Please load file first");
+                return;
+            }
+            if (_isPlaying)
+            {
+                return;
+            }
+
+            _isPlaying = true;
+            SetStatus("Playing");
+
+            var _file = MidiFile.Read(_lastMidiFile);
+            var _playback = _file.GetPlayback();
+
+            _playback.NotesPlaybackStarted += (sender, args) =>
+            {
+                if (_worker.CancellationPending)
+                {
+                    _playback.Stop();
+                }
+                PlayNotesAsKeys(args.Notes);
+            };
+
+            _playback.Stopped += (sender, args) => { _isPlaying = false; SetStatus("Stopped"); };
+            _playback.Finished += (sender, args) => { _isPlaying = false; SetStatus("Playback Completed");};
+
+            _playback.Play();
+        }
+
+        private void uiClose_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+
+        private void uiLoadMidi_Click(object sender, EventArgs e)
         {
             var openFile = new OpenFileDialog()
             {
@@ -78,102 +142,33 @@ namespace GenshinLyrePlayer
 
             if (openFile.ShowDialog() == DialogResult.OK)
             {
-                _lastMidiFile = textBox1.Text = openFile.FileName;
-                SetupMidiFile(_lastMidiFile);
+                _lastMidiFile = openFile.FileName;
+                Ready();
             }
         }
 
-        private void SetupMidiFile(string fileName)
+        private void Ready()
         {
-            _file = MidiFile.Read(fileName);
-            /*_playback = _file.GetPlayback();
-            
-            _playback.NotesPlaybackStarted += (sender, args) =>
-            {
-                var note = args.Notes.First();
-                _input.Keyboard.KeyPress(MihoyoMapOther.GetKeyForNote(note.ToString()));
-                //PlayNotesAsKeys(args.Notes, false);
-            };
-            /*_playback.NotesPlaybackFinished += (sender, args) =>
-            {
-                PlayNotesAsKeys(args.Notes, true);
-            };*/
-            //_playback.Stopped += (sender, args) => { _isPlaying = false; };
-            //_playback.Finished += (sender, args) => { _isPlaying = false; };
+            uiReady.Text = "V";
+            uiReady.ForeColor = Color.Lime;
+            uiReadyText.Text = $"MIDI Loaded [{Path.GetFileName(_lastMidiFile)}]";
         }
 
-        private void PlayNotesAsKeys(IEnumerable<Note> notes)
+        private void SetStatus(string text)
         {
-            var keys = new List<VirtualKeyCode>();
-            foreach (var note in notes)
+            if (uiStatusValue.InvokeRequired)
             {
-                var key = MihoyoMapOther.GetKeyForNote(note.ToString());
-                /*if (key != Keyboard.ScanCodeShort.ESCAPE)
-                {
-                    keys.Add(key);
-                    Debug.WriteLine(DateTime.Now.ToString() + " " + (isKeyUp ? "OFF" : "ON") + " " + key);
-                }*/
-                if (key != VirtualKeyCode.ESCAPE)
-                {
-                    keys.Add(key);
-                }
+                uiStatusValue.Invoke((MethodInvoker)delegate { uiStatusValue.Text = text; });
             }
-
-            if (keys.Count > 0) _input.Keyboard.KeyPress(keys.ToArray());
-            //_keyboard.Send(keys.ToArray(), isKeyUp);
-        }
-
-        private void Play()
-        {
-            if (_isPlaying)
+            else
             {
-                LogString("Already playing, wait till the end or stop");
-                return;
+                uiStatusValue.Text = text;
             }
-
-            //LogString("Playing");
-            _isPlaying = true;
-
-            _file = MidiFile.Read(_lastMidiFile);
-            _playback = _file.GetPlayback();
-
-            _playback.NotesPlaybackStarted += (sender, args) =>
-            {
-                if (_worker.CancellationPending)
-                {
-                    _playback.Stop();
-                }
-                var note = args.Notes.First();
-                PlayNotesAsKeys(args.Notes);
-                /*Debug.WriteLine(note.ToString());
-                var t = new Thread(() =>
-                {
-                    PlayNotesAsKeys(args.Notes);
-                    //_input.Keyboard.KeyPress(MihoyoMapOther.GetKeyForNote(note.ToString()));
-                });
-                t.Start();*/
-                
-                //PlayNotesAsKeys(args.Notes, false);
-            };
-            /*_playback.NotesPlaybackFinished += (sender, args) =>
-            {
-                PlayNotesAsKeys(args.Notes, true);
-            };*/
-            _playback.Stopped += (sender, args) => { _isPlaying = false; };
-            _playback.Finished += (sender, args) => { _isPlaying = false; };
-
-            _playback.Play();
         }
 
-        private IEnumerable<Note> GetMidiNotes(string fileName)
+        private void uiOptions_Click(object sender, EventArgs e)
         {
-            var file = MidiFile.Read(fileName);
-            return file.GetNotes();
-        }
-
-        public void LogString(string text)
-        {
-            richTextBox1.Text = richTextBox1.Text.Insert(0, $"{text}\r\n");
+            MessageBox.Show("Coming soon");
         }
     }
 }
