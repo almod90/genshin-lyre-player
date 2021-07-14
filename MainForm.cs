@@ -15,6 +15,7 @@ namespace GenshinLyrePlayer
     public partial class MainForm : Form
     {
         private string _lastMidiFile = "";
+        private int _transposeFor = 0;
 
         private bool _isPlaying;
 
@@ -37,6 +38,7 @@ namespace GenshinLyrePlayer
                 switch (args.KeyCode)
                 {
                     case Keys.NumPad5:
+                        if (_worker.IsBusy) return;
                         _worker.RunWorkerAsync();
                         break;
                     case Keys.NumPad6:
@@ -85,7 +87,7 @@ namespace GenshinLyrePlayer
             var keys = new List<VirtualKeyCode>();
             foreach (var note in notes)
             {
-                var key = MihoyoVirtualKeyMap.GetKeyForNote(note.ToString());
+                var key = MihoyoVirtualKeyMap.GetKeyForTransposedNote(note.ToString(), _transposeFor);
                 if (key != VirtualKeyCode.ESCAPE)
                 {
                     keys.Add(key);
@@ -143,6 +145,14 @@ namespace GenshinLyrePlayer
             if (openFile.ShowDialog() == DialogResult.OK)
             {
                 _lastMidiFile = openFile.FileName;
+                using (var transpose = new Transpose())
+                {
+                    _transposeFor = 0;
+                    if (transpose.ShowDialog() == DialogResult.OK)
+                    {
+                        _transposeFor = transpose.Semitone;
+                    }
+                }
                 Ready();
             }
         }

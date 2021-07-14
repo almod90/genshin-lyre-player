@@ -1,12 +1,45 @@
-﻿using System.Dynamic;
-using WindowsInput;
+﻿using System.Collections.Generic;
 using WindowsInput.Native;
 
 namespace GenshinLyrePlayer
 {
     public static class MihoyoVirtualKeyMap
     {
-        public static VirtualKeyCode GetKeyForNote(string note)
+        private static List<string> notesCollection;
+
+        private static void BuildNotesCollection()
+        {
+            if (notesCollection != null) return;
+
+            notesCollection = new List<string>();
+
+            var items = new string[] { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+            for (int i = 1; i <= 6; i++)
+            {
+                foreach (var note in items)
+                {
+                    notesCollection.Add($"{note}{i}");
+                }
+                
+            }
+        }
+        public static VirtualKeyCode GetKeyForTransposedNote(string note, int transpose)
+        {
+            if (transpose == 0) return GetKeyForNote(note);
+            BuildNotesCollection();
+            var i = notesCollection.IndexOf(note);
+            try
+            {
+                note = notesCollection[i + transpose] ?? note;
+            }
+            catch
+            {
+                // Don't care
+            }
+            return GetKeyForNote(note);
+        }
+
+        private static VirtualKeyCode GetKeyForNote(string note)
         {
             switch (note)
             {
