@@ -34,10 +34,12 @@ namespace GenshinLyrePlayer {
 		/// The collections of keys to watch for
 		/// </summary>
 		public List<Keys> HookedKeys = new List<Keys>();
+
 		/// <summary>
 		/// Handle to the hook, need this to unhook and call the next hook
 		/// </summary>
-		IntPtr hhook = IntPtr.Zero;
+		private IntPtr hhook = IntPtr.Zero;
+		private keyboardHookProc hookProcDelegate;
 		#endregion
 
 		#region Events
@@ -56,6 +58,7 @@ namespace GenshinLyrePlayer {
 		/// Initializes a new instance of the <see cref="globalKeyboardHook"/> class and installs the keyboard hook.
 		/// </summary>
 		public GlobalKeyboardHook() {
+			hookProcDelegate = hookProc;
 			hook();
 		}
 
@@ -74,7 +77,7 @@ namespace GenshinLyrePlayer {
 		/// </summary>
 		public void hook() {
 			IntPtr hInstance = LoadLibrary("User32");
-			hhook = SetWindowsHookEx(WH_KEYBOARD_LL, hookProc, hInstance, 0);
+			hhook = SetWindowsHookEx(WH_KEYBOARD_LL, hookProcDelegate, hInstance, 0);
 		}
 
 		/// <summary>

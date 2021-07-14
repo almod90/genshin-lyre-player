@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -15,7 +16,29 @@ namespace GenshinLyrePlayer
     public partial class MainForm : Form
     {
         private string _lastMidiFile = "";
-        private int _transposeFor = 0;
+
+        private static GlobalKeyboardHook hook;
+
+        private static MainForm Instance = null;
+
+        private static int _transposeFor = 0;
+        private static int TransposeFor
+        {
+            get => _transposeFor;
+            set
+            {
+                _transposeFor = value;
+                var text = value < 0 ? $"T{value}" : $"T+{value}";
+                if (Instance.uiTranspose.InvokeRequired)
+                {
+                    Instance.uiTranspose.Invoke((MethodInvoker)delegate { Instance.uiTranspose.Text = text; });
+                }
+                else
+                {
+                    Instance.uiTranspose.Text = text;
+                }
+            }
+        }
 
         private bool _isPlaying;
 
@@ -27,31 +50,23 @@ namespace GenshinLyrePlayer
             InitializeComponent();
 
             _input = new InputSimulator();
-            
-            var hook = new GlobalKeyboardHook();
 
+            hook = new GlobalKeyboardHook();
+
+            hook.HookedKeys.Add(Keys.NumPad4);
             hook.HookedKeys.Add(Keys.NumPad5);
             hook.HookedKeys.Add(Keys.NumPad6);
+            hook.HookedKeys.Add(Keys.NumPad7);
+            hook.HookedKeys.Add(Keys.NumPad8);
+            hook.HookedKeys.Add(Keys.NumPad9);
 
-            hook.KeyDown += (sender, args) =>
-            {
-                switch (args.KeyCode)
-                {
-                    case Keys.NumPad5:
-                        if (_worker.IsBusy) return;
-                        _worker.RunWorkerAsync();
-                        break;
-                    case Keys.NumPad6:
-                        _worker.CancelAsync();
-                        break;
-                }
-            };
-            
+            hook.KeyDown += OnGlobal_KeyDown;
+
             _worker = new BackgroundWorker()
             {
                 WorkerSupportsCancellation = true
             };
-            
+
             _worker.DoWork += (sender, args) =>
             {
                 Play();
@@ -59,6 +74,8 @@ namespace GenshinLyrePlayer
 
             uiHeader.BackColor = Color.FromArgb(100, Color.Black);
             uiFooter.BackColor = Color.FromArgb(150, Color.Black);
+
+            Instance = this;
         }
 
         #region Moving window without header
@@ -82,12 +99,39 @@ namespace GenshinLyrePlayer
 
         #endregion
 
+        private void OnGlobal_KeyDown(object sender, KeyEventArgs args)
+        {
+            switch (args.KeyCode)
+            {
+                case Keys.NumPad5:
+                    if (_worker.IsBusy) return;
+                    _worker.RunWorkerAsync();
+                    break;
+                case Keys.NumPad8:
+                    _worker.CancelAsync();
+                    break;
+                case Keys.NumPad4:
+                    TransposeFor--;
+                    break;
+                case Keys.NumPad6:
+                    TransposeFor++;
+                    break;
+                case Keys.NumPad7:
+                    TransposeFor -= 12;
+                    break;
+                case Keys.NumPad9:
+                    TransposeFor += 12;
+                    break;
+
+            }
+        }
+
         private void PlayNotesAsKeys(IEnumerable<Note> notes)
         {
             var keys = new List<VirtualKeyCode>();
             foreach (var note in notes)
             {
-                var key = MihoyoVirtualKeyMap.GetKeyForTransposedNote(note.ToString(), _transposeFor);
+                var key = MihoyoVirtualKeyMap.GetKeyForTransposedNote(note.ToString(), TransposeFor);
                 if (key != VirtualKeyCode.ESCAPE)
                 {
                     keys.Add(key);
@@ -125,7 +169,7 @@ namespace GenshinLyrePlayer
             };
 
             _playback.Stopped += (sender, args) => { _isPlaying = false; SetStatus("Stopped"); };
-            _playback.Finished += (sender, args) => { _isPlaying = false; SetStatus("Playback Completed");};
+            _playback.Finished += (sender, args) => { _isPlaying = false; SetStatus("Playback Completed"); };
 
             _playback.Play();
         }
@@ -147,10 +191,10 @@ namespace GenshinLyrePlayer
                 _lastMidiFile = openFile.FileName;
                 using (var transpose = new Transpose())
                 {
-                    _transposeFor = 0;
+                    TransposeFor = 0;
                     if (transpose.ShowDialog() == DialogResult.OK)
                     {
-                        _transposeFor = transpose.Semitone;
+                        TransposeFor = transpose.Semitone;
                     }
                 }
                 Ready();

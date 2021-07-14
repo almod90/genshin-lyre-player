@@ -40,12 +40,14 @@ namespace GenshinLyrePlayer
             this.uiFooter = new System.Windows.Forms.Panel();
             this.uiStatusValue = new GenshinLyrePlayer.Controls.ShadowLabel();
             this.uiStatusText = new GenshinLyrePlayer.Controls.ShadowLabel();
+            this.uiTranspose = new GenshinLyrePlayer.Controls.ShadowLabel();
             this.uiHeader.SuspendLayout();
             this.uiFooter.SuspendLayout();
             this.SuspendLayout();
             // 
             // uiHeader
             // 
+            this.uiHeader.Controls.Add(this.uiTranspose);
             this.uiHeader.Controls.Add(this.uiReadyText);
             this.uiHeader.Controls.Add(this.uiReady);
             this.uiHeader.Controls.Add(this.uiClose);
@@ -67,7 +69,7 @@ namespace GenshinLyrePlayer
             this.uiReadyText.Name = "uiReadyText";
             this.uiReadyText.ShadowColor = System.Drawing.Color.Black;
             this.uiReadyText.ShadowMargin = new System.Drawing.Point(1, 1);
-            this.uiReadyText.Size = new System.Drawing.Size(276, 23);
+            this.uiReadyText.Size = new System.Drawing.Size(250, 23);
             this.uiReadyText.TabIndex = 3;
             this.uiReadyText.Text = "Midi Not Loaded";
             this.uiReadyText.UseCompatibleTextRendering = true;
@@ -177,6 +179,20 @@ namespace GenshinLyrePlayer
             this.uiStatusText.Text = "Status:";
             this.uiStatusText.UseCompatibleTextRendering = true;
             // 
+            // uiTranspose
+            // 
+            this.uiTranspose.BackColor = System.Drawing.Color.Transparent;
+            this.uiTranspose.Font = new System.Drawing.Font("Motorwerk", 16F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel, ((byte)(204)));
+            this.uiTranspose.ForeColor = System.Drawing.Color.White;
+            this.uiTranspose.Location = new System.Drawing.Point(272, 41);
+            this.uiTranspose.Name = "uiTranspose";
+            this.uiTranspose.ShadowColor = System.Drawing.Color.Black;
+            this.uiTranspose.ShadowMargin = new System.Drawing.Point(1, 1);
+            this.uiTranspose.Size = new System.Drawing.Size(36, 23);
+            this.uiTranspose.TabIndex = 8;
+            this.uiTranspose.Text = "T+0";
+            this.uiTranspose.UseCompatibleTextRendering = true;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -211,5 +227,6 @@ namespace GenshinLyrePlayer
         private System.Windows.Forms.Panel uiFooter;
         private ShadowLabel uiStatusValue;
         private ShadowLabel uiStatusText;
+        private ShadowLabel uiTranspose;
     }
 }
