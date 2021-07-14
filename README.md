@@ -19,6 +19,6 @@ You can transpose song before playing or transpose while playing
 
 **Numpad 9** - Transpose 1 octave up
 
-###Soon:
+### Soon:
 
 To change keys in options

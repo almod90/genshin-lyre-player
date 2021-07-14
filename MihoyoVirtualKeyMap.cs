@@ -5,87 +5,60 @@ namespace GenshinLyrePlayer
 {
     public static class MihoyoVirtualKeyMap
     {
-        private static List<string> notesCollection;
-
-        private static void BuildNotesCollection()
+        public static VirtualKeyCode GetKeyForTransposedNote(int note, int transpose)
         {
-            if (notesCollection != null) return;
-
-            notesCollection = new List<string>();
-
-            var items = new string[] { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-            for (int i = 1; i <= 6; i++)
-            {
-                foreach (var note in items)
-                {
-                    notesCollection.Add($"{note}{i}");
-                }
-                
-            }
-        }
-        public static VirtualKeyCode GetKeyForTransposedNote(string note, int transpose)
-        {
-            if (transpose == 0) return GetKeyForNote(note);
-            BuildNotesCollection();
-            var i = notesCollection.IndexOf(note);
-            try
-            {
-                note = notesCollection[i + transpose] ?? note;
-            }
-            catch
-            {
-                // Don't care
-            }
-            return GetKeyForNote(note);
+            return GetKeyForNote(note + transpose);
         }
 
-        private static VirtualKeyCode GetKeyForNote(string note)
+        private static VirtualKeyCode GetKeyForNote(int note)
         {
             switch (note)
             {
-                case "C3":
+                // C3
+                case 48:
                     return VirtualKeyCode.VK_Z;
-                case "D3":
+                case 50:
                     return VirtualKeyCode.VK_X;
-                case "E3":
+                case 52:
                     return VirtualKeyCode.VK_C;
-                case "F3":
+                case 53:
                     return VirtualKeyCode.VK_V;
-                case "G3":
+                case 55:
                     return VirtualKeyCode.VK_B;
-                case "A3":
+                case 57:
                     return VirtualKeyCode.VK_N;
-                case "B3":
+                case 59:
                     return VirtualKeyCode.VK_M;
                 
-                case "C4":
+                // C4
+                case 60:
                     return VirtualKeyCode.VK_A;
-                case "D4":
+                case 62:
                     return VirtualKeyCode.VK_S;
-                case "E4":
+                case 64:
                     return VirtualKeyCode.VK_D;
-                case "F4":
+                case 65:
                     return VirtualKeyCode.VK_F;
-                case "G4":
+                case 67:
                     return VirtualKeyCode.VK_G;
-                case "A4":
+                case 69:
                     return VirtualKeyCode.VK_H;
-                case "B4":
+                case 71:
                     return VirtualKeyCode.VK_J;
                 
-                case "C5":
+                case 72:
                     return VirtualKeyCode.VK_Q;
-                case "D5":
+                case 74:
                     return VirtualKeyCode.VK_W;
-                case "E5":
+                case 76:
                     return VirtualKeyCode.VK_E;
-                case "F5":
+                case 77:
                     return VirtualKeyCode.VK_R;
-                case "G5":
+                case 79:
                     return VirtualKeyCode.VK_T;
-                case "A5":
+                case 81:
                     return VirtualKeyCode.VK_Y;
-                case "B5":
+                case 83:
                     return VirtualKeyCode.VK_U;
             }
 

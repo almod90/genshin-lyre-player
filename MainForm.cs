@@ -131,7 +131,7 @@ namespace GenshinLyrePlayer
             var keys = new List<VirtualKeyCode>();
             foreach (var note in notes)
             {
-                var key = MihoyoVirtualKeyMap.GetKeyForTransposedNote(note.ToString(), TransposeFor);
+                var key = MihoyoVirtualKeyMap.GetKeyForTransposedNote(note.NoteNumber, TransposeFor);
                 if (key != VirtualKeyCode.ESCAPE)
                 {
                     keys.Add(key);
